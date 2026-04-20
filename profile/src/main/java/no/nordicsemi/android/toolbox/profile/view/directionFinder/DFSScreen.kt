@@ -1,5 +1,7 @@
 package no.nordicsemi.android.toolbox.profile.view.directionFinder
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -44,14 +47,34 @@ internal fun DFSScreen() {
     val dfsVM = hiltViewModel<DirectionFinderViewModel>()
     val onClick: (DFSEvent) -> Unit = { dfsVM.onEvent(it) }
     val serviceData by dfsVM.dfsState.collectAsStateWithLifecycle()
+    val rangingSamples by dfsVM.rangingSamples.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val csvData = dfsVM.createCsvExport()
+        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+            outputStream.write(csvData.toByteArray(Charsets.UTF_8))
+        }
+    }
 
-    DFSView(serviceData, onClick)
+    DFSView(
+        serviceData = serviceData,
+        onClick = onClick,
+        isCsvExportEnabled = rangingSamples.isNotEmpty(),
+        onCsvExportClicked = {
+            exportCsvLauncher.launch("dfs_ranging_${System.currentTimeMillis()}.csv")
+        },
+    )
 }
 
 @Composable
 private fun DFSView(
     serviceData: DFSServiceData,
     onClick: (DFSEvent) -> Unit,
+    isCsvExportEnabled: Boolean,
+    onCsvExportClicked: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -64,7 +87,13 @@ private fun DFSView(
 
         val data = serviceData.data[serviceData.selectedDevice]
         data?.distanceValue()?.let {
-            DistanceSection(data, serviceData.distanceRange, onClick)
+            DistanceSection(
+                sensorData = data,
+                range = serviceData.distanceRange,
+                onClick = onClick,
+                isCsvExportEnabled = isCsvExportEnabled,
+                onCsvExportClicked = onCsvExportClicked,
+            )
         }
 
         val isAzimuthAndElevationDataAvailable = data?.isAzimuthAndElevationDataAvailable() ?: false
@@ -79,7 +108,9 @@ private fun DFSView(
 private fun LoadingViewPreview() {
     DFSView(
         serviceData = DFSServiceData(),
-        onClick = {}
+        onClick = {},
+        isCsvExportEnabled = false,
+        onCsvExportClicked = {},
     )
 }
 
@@ -90,7 +121,9 @@ private fun ScanningPreview() {
         serviceData = DFSServiceData(
             requestStatus = RequestStatus.SUCCESS
         ),
-        onClick = {}
+        onClick = {},
+        isCsvExportEnabled = false,
+        onCsvExportClicked = {},
     )
 }
 
@@ -147,6 +180,8 @@ private fun DFSPreview() {
                 )
             )
         ),
-        onClick = {}
+        onClick = {},
+        isCsvExportEnabled = true,
+        onCsvExportClicked = {},
     )
 }

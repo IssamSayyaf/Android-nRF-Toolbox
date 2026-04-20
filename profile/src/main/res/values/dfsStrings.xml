@@ -47,4 +47,5 @@
     <string name="to">To: </string>
 
     <string name="distance_range">Distance range settings</string>
+    <string name="dfs_export_csv">Export CSV</string>
 </resources>
