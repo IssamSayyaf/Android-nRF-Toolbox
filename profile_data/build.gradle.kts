@@ -9,4 +9,7 @@ android {
 dependencies {
     implementation(project(":profile-parsers"))
     implementation(project(":lib_utils"))
+
+    testImplementation(libs.junit4)
+    testImplementation(libs.kotlin.junit)
 }

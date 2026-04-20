@@ -6,13 +6,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +51,8 @@ internal fun DistanceSection(
     sensorData: SensorData,
     range: IntRange,
     onClick: (DFSEvent) -> Unit,
+    isCsvExportEnabled: Boolean,
+    onCsvExportClicked: () -> Unit,
 ) {
     ScreenSection {
         var showDetails by rememberSaveable { mutableStateOf(false) }
@@ -78,6 +83,21 @@ internal fun DistanceSection(
             text = stringResource(R.string.dm_value, distanceValue),
             style = MaterialTheme.typography.titleLarge,
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onCsvExportClicked,
+            enabled = isCsvExportEnabled,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Download,
+                contentDescription = null,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = stringResource(id = R.string.dfs_export_csv))
+        }
 
 //    Text(
 //        text = stringResource(id = R.string.distance_range),
@@ -150,5 +170,7 @@ private fun DistanceSectionPreview() {
         ),
         range = 0..50,
         onClick = {},
+        isCsvExportEnabled = true,
+        onCsvExportClicked = {},
     )
 }

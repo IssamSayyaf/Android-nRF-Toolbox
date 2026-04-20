@@ -13,6 +13,8 @@ import no.nordicsemi.android.common.navigation.viewmodel.SimpleNavigationViewMod
 import no.nordicsemi.android.toolbox.lib.utils.Profile
 import no.nordicsemi.android.toolbox.profile.ProfileDestinationId
 import no.nordicsemi.android.toolbox.profile.data.DFSServiceData
+import no.nordicsemi.android.toolbox.profile.data.directionFinder.DFSRangingSample
+import no.nordicsemi.android.toolbox.profile.data.directionFinder.toRangingSample
 import no.nordicsemi.android.toolbox.profile.manager.repository.DFSRepository
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.PeripheralBluetoothAddress
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.controlPoint.ControlPointMode
@@ -35,6 +37,8 @@ internal class DirectionFinderViewModel @Inject constructor(
 ) : SimpleNavigationViewModel(navigator, savedStateHandle) {
     private val _dfsState = MutableStateFlow(DFSServiceData())
     val dfsState = _dfsState.asStateFlow()
+    private val _rangingSamples = MutableStateFlow<List<DFSRangingSample>>(emptyList())
+    val rangingSamples = _rangingSamples.asStateFlow()
     private val address = parameterOf(ProfileDestinationId)
 
     init {
@@ -62,6 +66,17 @@ internal class DirectionFinderViewModel @Inject constructor(
      */
     private fun startDFSService() =
         DFSRepository.getData(address).onEach {
+            val selectedDevice = it.selectedDevice
+            val sample = selectedDevice?.let { peripheral ->
+                it.data[peripheral]?.toRangingSample(
+                    selectedDevice = peripheral,
+                    timestampEpochMillis = System.currentTimeMillis(),
+                )
+            }
+            if (sample != null) {
+                _rangingSamples.value += sample
+            }
+
             _dfsState.value = _dfsState.value.copy(
                 requestStatus = it.requestStatus,
                 data = it.data,
