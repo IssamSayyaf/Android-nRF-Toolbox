@@ -13,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +28,7 @@ import no.nordicsemi.android.toolbox.profile.R
 import no.nordicsemi.android.toolbox.profile.data.DFSServiceData
 import no.nordicsemi.android.toolbox.profile.data.SensorData
 import no.nordicsemi.android.toolbox.profile.data.SensorValue
+import no.nordicsemi.android.toolbox.profile.data.directionFinder.DFSCsvFormatter
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.distanceValue
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.isAzimuthAndElevationDataAvailable
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.PeripheralBluetoothAddress
@@ -41,6 +43,11 @@ import no.nordicsemi.android.toolbox.profile.parser.gls.data.RequestStatus
 import no.nordicsemi.android.toolbox.profile.viewmodel.DFSEvent
 import no.nordicsemi.android.toolbox.profile.viewmodel.DirectionFinderViewModel
 import no.nordicsemi.android.ui.view.ScreenSection
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 internal fun DFSScreen() {
@@ -49,13 +56,16 @@ internal fun DFSScreen() {
     val serviceData by dfsVM.dfsState.collectAsStateWithLifecycle()
     val rangingSamples by dfsVM.rangingSamples.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val csvData = dfsVM.createCsvExport()
-        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-            outputStream.write(csvData.toByteArray(Charsets.UTF_8))
+        val samplesSnapshot = rangingSamples.toList()
+        coroutineScope.launch(Dispatchers.IO) {
+            context.contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+                DFSCsvFormatter.write(samplesSnapshot, writer)
+            }
         }
     }
 
@@ -64,9 +74,14 @@ internal fun DFSScreen() {
         onClick = onClick,
         isCsvExportEnabled = rangingSamples.isNotEmpty(),
         onCsvExportClicked = {
-            exportCsvLauncher.launch("dfs_ranging_${System.currentTimeMillis()}.csv")
+            exportCsvLauncher.launch(defaultCsvFileName())
         },
     )
+}
+
+private fun defaultCsvFileName(): String {
+    val timestamp = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US).format(Date())
+    return "dfs_ranging_$timestamp.csv"
 }
 
 @Composable

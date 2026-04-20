@@ -48,31 +48,34 @@ fun SensorData.toRangingSample(
 object DFSCsvFormatter {
     private const val HEADER = "timestamp_epoch_ms,device_address,distance_dm,rtt_dm,rtt_quality,mcpd_best_dm,mcpd_ifft_dm,mcpd_phase_slope_dm,mcpd_rssi,mcpd_quality"
 
-    fun format(samples: List<DFSRangingSample>): String {
-        val rows = samples.joinToString(separator = "\n") { sample ->
-            listOf(
-                sample.timestampEpochMillis.toString(),
-                sample.deviceAddress,
-                sample.distanceDm?.toString().orEmpty(),
-                sample.rttDm?.toString().orEmpty(),
-                sample.rttQuality.orEmpty(),
-                sample.mcpdBestDm?.toString().orEmpty(),
-                sample.mcpdIfftDm?.toString().orEmpty(),
-                sample.mcpdPhaseSlopeDm?.toString().orEmpty(),
-                sample.mcpdRssi?.toString().orEmpty(),
-                sample.mcpdQuality.orEmpty(),
-            ).joinToString(",") { csvEscape(it) }
+    fun write(samples: List<DFSRangingSample>, appendable: Appendable) {
+        appendable.appendLine(HEADER)
+        samples.forEach { sample ->
+            appendable.appendLine(
+                listOf(
+                    sample.timestampEpochMillis.toString(),
+                    sample.deviceAddress,
+                    sample.distanceDm?.toString().orEmpty(),
+                    sample.rttDm?.toString().orEmpty(),
+                    sample.rttQuality.orEmpty(),
+                    sample.mcpdBestDm?.toString().orEmpty(),
+                    sample.mcpdIfftDm?.toString().orEmpty(),
+                    sample.mcpdPhaseSlopeDm?.toString().orEmpty(),
+                    sample.mcpdRssi?.toString().orEmpty(),
+                    sample.mcpdQuality.orEmpty(),
+                ).joinToString(",") { csvEscape(it) }
+            )
         }
+    }
 
-        return if (rows.isEmpty()) {
-            "$HEADER\n"
-        } else {
-            "$HEADER\n$rows\n"
+    fun format(samples: List<DFSRangingSample>): String {
+        return buildString {
+            write(samples, this)
         }
     }
 
     private fun csvEscape(value: String): String {
-        if (value.none { it == ',' || it == '"' || it == '\n' || it == '\r' }) {
+        if (!value.any { it == ',' || it == '"' || it == '\n' || it == '\r' }) {
             return value
         }
         return "\"${value.replace("\"", "\"\"")}\""

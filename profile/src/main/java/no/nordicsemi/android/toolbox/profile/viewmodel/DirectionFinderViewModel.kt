@@ -13,7 +13,6 @@ import no.nordicsemi.android.common.navigation.viewmodel.SimpleNavigationViewMod
 import no.nordicsemi.android.toolbox.lib.utils.Profile
 import no.nordicsemi.android.toolbox.profile.ProfileDestinationId
 import no.nordicsemi.android.toolbox.profile.data.DFSServiceData
-import no.nordicsemi.android.toolbox.profile.data.directionFinder.DFSCsvFormatter
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.DFSRangingSample
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.toRangingSample
 import no.nordicsemi.android.toolbox.profile.manager.repository.DFSRepository
@@ -86,8 +85,6 @@ internal class DirectionFinderViewModel @Inject constructor(
                 distanceRange = it.distanceRange,
             )
         }.launchIn(viewModelScope)
-
-    fun createCsvExport(): String = DFSCsvFormatter.format(_rangingSamples.value)
 
     /**
      * Handles events related to the Direction Finder Service (DFS).
