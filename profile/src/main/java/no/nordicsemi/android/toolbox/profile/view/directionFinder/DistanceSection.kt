@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +49,7 @@ internal fun DistanceSection(
     sensorData: SensorData,
     range: IntRange,
     onClick: (DFSEvent) -> Unit,
+    onExportCsv: () -> Unit,
 ) {
     ScreenSection {
         var showDetails by rememberSaveable { mutableStateOf(false) }
@@ -57,6 +59,14 @@ internal fun DistanceSection(
             title = stringResource(id = R.string.distance_section),
             menu = {
                 if (sensorData.isDistanceSettingsAvailable()) {
+                    IconButton(
+                        onClick = onExportCsv
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = stringResource(R.string.export_dfs_csv_content_description),
+                        )
+                    }
                     IconButton(
                         onClick = { showDetails = !showDetails }
                     ) {
@@ -150,5 +160,6 @@ private fun DistanceSectionPreview() {
         ),
         range = 0..50,
         onClick = {},
+        onExportCsv = {},
     )
 }

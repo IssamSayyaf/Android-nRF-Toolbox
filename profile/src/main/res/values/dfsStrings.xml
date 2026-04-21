@@ -47,4 +47,7 @@
     <string name="to">To: </string>
 
     <string name="distance_range">Distance range settings</string>
+    <string name="export_dfs_csv_content_description">Export DFS CSV report</string>
+    <string name="dfs_csv_share_subject">DFS measurements CSV</string>
+    <string name="dfs_csv_share_chooser_title">Share DFS CSV</string>
 </resources>
