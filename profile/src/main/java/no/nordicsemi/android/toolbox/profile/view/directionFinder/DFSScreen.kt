@@ -1,5 +1,7 @@
 package no.nordicsemi.android.toolbox.profile.view.directionFinder
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -26,6 +29,7 @@ import no.nordicsemi.android.toolbox.profile.data.SensorData
 import no.nordicsemi.android.toolbox.profile.data.SensorValue
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.distanceValue
 import no.nordicsemi.android.toolbox.profile.data.directionFinder.isAzimuthAndElevationDataAvailable
+import no.nordicsemi.android.toolbox.profile.data.directionFinder.toDfsCsvReport
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.PeripheralBluetoothAddress
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.QualityIndicator
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.azimuthal.AzimuthMeasurementData
@@ -44,14 +48,20 @@ internal fun DFSScreen() {
     val dfsVM = hiltViewModel<DirectionFinderViewModel>()
     val onClick: (DFSEvent) -> Unit = { dfsVM.onEvent(it) }
     val serviceData by dfsVM.dfsState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    DFSView(serviceData, onClick)
+    DFSView(
+        serviceData = serviceData,
+        onClick = onClick,
+        onExportCsv = { shareDfsCsv(context, serviceData) }
+    )
 }
 
 @Composable
 private fun DFSView(
     serviceData: DFSServiceData,
     onClick: (DFSEvent) -> Unit,
+    onExportCsv: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -64,7 +74,12 @@ private fun DFSView(
 
         val data = serviceData.data[serviceData.selectedDevice]
         data?.distanceValue()?.let {
-            DistanceSection(data, serviceData.distanceRange, onClick)
+            DistanceSection(
+                sensorData = data,
+                range = serviceData.distanceRange,
+                onClick = onClick,
+                onExportCsv = onExportCsv
+            )
         }
 
         val isAzimuthAndElevationDataAvailable = data?.isAzimuthAndElevationDataAvailable() ?: false
@@ -79,7 +94,8 @@ private fun DFSView(
 private fun LoadingViewPreview() {
     DFSView(
         serviceData = DFSServiceData(),
-        onClick = {}
+        onClick = {},
+        onExportCsv = {}
     )
 }
 
@@ -90,7 +106,8 @@ private fun ScanningPreview() {
         serviceData = DFSServiceData(
             requestStatus = RequestStatus.SUCCESS
         ),
-        onClick = {}
+        onClick = {},
+        onExportCsv = {}
     )
 }
 
@@ -147,6 +164,18 @@ private fun DFSPreview() {
                 )
             )
         ),
-        onClick = {}
+        onClick = {},
+        onExportCsv = {}
+    )
+}
+
+private fun shareDfsCsv(context: Context, serviceData: DFSServiceData) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/csv"
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.dfs_csv_share_subject))
+        putExtra(Intent.EXTRA_TEXT, serviceData.toDfsCsvReport())
+    }
+    context.startActivity(
+        Intent.createChooser(sendIntent, context.getString(R.string.dfs_csv_share_chooser_title))
     )
 }
